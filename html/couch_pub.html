@@ -1,0 +1,385 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      --><title>COUCH4MAT: CouchDB Matlab tbox</title><meta name="generator" content="MATLAB 7.10"><meta name="date" content="2010-04-12"><meta name="m-file" content="couch_pub"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head><body><div class="content"><h1>COUCH4MAT: CouchDB Matlab tbox</h1><!--introduction--><p>Jonas Almeida, April 2010</p><p>This manual was generated automatically by running pub.m .</p><p>The couch tbox revolves around a data structure and a single command. The data structure can be created by just pointing the command to a a URL where CouchDB is installed. If no URL is provided then the command assumes you are targetting a local deployment, and will use localhost:5984.</p><p>All CouchDB functionalities are coded under the couch command with one exception - the JSON parsers. These two parsers, json2mat and mat2json, collectively designated as json4mat (<a href="http://json4mat.googlecode.com)">http://json4mat.googlecode.com)</a>.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Installation</a></li><li><a href="#2">couch()</a></li><li><a href="#3">Create database</a></li><li><a href="#4">List all databases</a></li><li><a href="#5">Insert a document</a></li><li><a href="#6">List all docs</a></li><li><a href="#7">Get one doc</a></li><li><a href="#8">Doc output argument</a></li><li><a href="#9">JSON4MAT</a></li><li><a href="#10">Delete one document</a></li><li><a href="#11">Delete database</a></li><li><a href="#12">Authentication</a></li></ul></div><h2>Installation<a name="1"></a></h2><p>You can download couch for the different OSs from <a href="http://couchdb.apache.org/">http://couchdb.apache.org/</a>   or   from <a href="http://www.couch.io/downloads">http://www.couch.io/downloads</a>.</p><p>In addition to Matlab this tutorial also assumes you have CURL installed.</p><p>If you are running on Windows you can get it from <a href="http://curl.haxx.se/,">if</a> you are running this on a Mac or Linux you probably already have it.</p><h2>couch()<a name="2"></a></h2><p>Lets start by calling the local deployment, you can also target and arbitrary deployment by using the URL as the input argument, i.e. couch('url goes here')</p><pre class="codeinput">c=couch
+<span class="comment">% this structure, c, will now be used as teh input argument of coucDB() to</span>
+<span class="comment">% which we will add more arguments.</span>
+<span class="comment">%</span>
+</pre><pre class="codeoutput">
+c = 
+
+        url: 'http://127.0.0.1:5984'
+        opt: 'welcome'
+    welcome: [1x1 struct]
+
+</pre><h2>Create database<a name="3"></a></h2><p>The name of the database you want to create can be passed directly in the c structure at c.db.name or can be sent as a third input argument, which we'll do here:</p><pre class="codeinput">c=couch(c,<span class="string">'create db'</span>,<span class="string">'mydb'</span>)
+</pre><pre class="codeoutput">
+c = 
+
+        url: 'http://127.0.0.1:5984'
+        opt: 'create db'
+    welcome: [1x1 struct]
+         db: [1x1 struct]
+       cURL: [1x1 struct]
+
+</pre><h2>List all databases<a name="4"></a></h2><p>As with other usages of couch we'll use arguments that are as close as possible to CouchDB's own syntax. For example, to get a list of all databases one would call [c.url,'/_all_dbs'] so the second argument, and field in the updated c structure, is 'all_dbs':</p><pre class="codeinput">c=couch(c,<span class="string">'all_dbs'</span>)
+</pre><pre class="codeoutput">
+c = 
+
+        url: 'http://127.0.0.1:5984'
+        opt: 'all_dbs'
+    welcome: [1x1 struct]
+         db: [1x1 struct]
+       cURL: [1x1 struct]
+    all_dbs: {'lixo'  'mydb'  'testing_again'  'test_suite_db/with_slashes'  'test_suite_db'  'test_suite_reports'}
+
+</pre><h2>Insert a document<a name="5"></a></h2><p>the document can be provided already as a JSON string</p><pre class="codeinput">[c,doc]=couch(c,<span class="string">'insert doc'</span>,<span class="string">'{"hello":"world"}'</span>);
+<span class="comment">% or as a structured variable, which can include additional fields</span>
+lala.hello=<span class="string">'world'</span>;lala.randM=rand(5);[c,doc]=couch(c,<span class="string">'insert doc'</span>,lala)
+<span class="comment">% note that the response in c.cURL has all the details of the exchange,</span>
+c.cURL
+<span class="comment">% including the _id and _rev of the document</span>
+c.cURL.json
+<span class="comment">% which is evertheless returned as a seccond output argument, doc. If only</span>
+<span class="comment">% one output argument is specified that will be doc</span>
+doc=couch(c,<span class="string">'insert doc'</span>,lala);
+<span class="comment">% see "Doc output argument" section for more on this</span>
+</pre><pre class="codeoutput">
+c = 
+
+        url: 'http://127.0.0.1:5984'
+        opt: 'insert doc'
+    welcome: [1x1 struct]
+         db: [1x1 struct]
+       cURL: [1x1 struct]
+    all_dbs: {'lixo'  'mydb'  'testing_again'  'test_suite_db/with_slashes'  'test_suite_db'  'test_suite_reports'}
+
+
+doc = 
+
+     ok: 'true'
+     id: 'c25d4cac6c7f04f10ffb295bef004e61'
+    rev: '1-bfbc233e2221e1f9e1585340ca748831'
+
+
+ans = 
+
+    call: '-kX PUT http://127.0.0.1:5984/mydb/c25d4cac6c7f04f10ffb295bef004e61 -d @couch_c25d4cac6c7f04f10ffb295bef004e61.json'
+     ans: 0
+     msg: [1x412 char]
+    json: [1x1 struct]
+
+
+ans = 
+
+     ok: 'true'
+     id: 'c25d4cac6c7f04f10ffb295bef004e61'
+    rev: '1-bfbc233e2221e1f9e1585340ca748831'
+
+</pre><h2>List all docs<a name="6"></a></h2><p>as with 'all_dbs' but now for documents of a database</p><pre class="codeinput">c=couch(c,<span class="string">'all_docs'</span>);c.db.all_docs
+<span class="comment">%and each row will contain the key/value returned by that minimalist view</span>
+c.db.all_docs.rows(:)
+</pre><pre class="codeoutput">
+ans = 
+
+    total_rows: 3
+        offset: 0
+          rows: [3x1 struct]
+
+
+ans = 
+
+3x1 struct array with fields:
+    id
+    key
+    value
+
+</pre><h2>Get one doc<a name="7"></a></h2><p>lets get the last document inserted using its _id</p><pre class="codeinput">id = c.db.all_docs.rows(end).id
+<span class="comment">% and now restrive the entry</span>
+[c,doc]=couch(c,<span class="string">'get doc'</span>,id)
+<span class="comment">% doc comes out as the second output argument of couch(). If you only</span>
+<span class="comment">% provide one output argument coucj will assume it is doc such that you can</span>
+<span class="comment">% convinently do doc=couch(c,'get doc',id).</span>
+</pre><pre class="codeoutput">
+id =
+
+c25d4cac6c7f04f10ffb295bef00584c
+
+
+c = 
+
+        url: 'http://127.0.0.1:5984'
+        opt: 'get doc'
+    welcome: [1x1 struct]
+         db: [1x1 struct]
+       cURL: [1x1 struct]
+    all_dbs: {'lixo'  'mydb'  'testing_again'  'test_suite_db/with_slashes'  'test_suite_db'  'test_suite_reports'}
+
+
+doc = 
+
+       id: 'c25d4cac6c7f04f10ffb295bef00584c'
+      rev: '1-bfbc233e2221e1f9e1585340ca748831'
+    hello: 'world'
+    randM: [5x5 double]
+
+</pre><h2>Doc output argument<a name="8"></a></h2><p>In the previous example two output arguments were used, the c structure and usual and the target answer to the URL call, the document. So now is a good time to look at the use of output arguments. Because c is use as couch db document model it is expected as as input and output argument of couch(). However, it may be convenient in functions such as the previous one to simply return the document that was requested. To acomodate that in fucntions such as these the number of output arguments is used to decide what is returned. If there is only one output argument doc is returned. This pattern will be used for all doc centric commands, such as 'delete doc' further ahead in this tutorial.</p><pre class="codeinput">doc=couch(c,<span class="string">'get doc'</span>,id)
+</pre><pre class="codeoutput">
+doc = 
+
+       id: 'c25d4cac6c7f04f10ffb295bef00584c'
+      rev: '1-bfbc233e2221e1f9e1585340ca748831'
+    hello: 'world'
+    randM: [5x5 double]
+
+</pre><h2>JSON4MAT<a name="9"></a></h2><p>This is also a good time to recognize what the JSON4MAT parsers are doing to accomodate Matlab data own formats. Notice that doc.randM is a 2D matrix but JSON has no convention to represent dimensionality even if it is reasonable to imagine it as an array of arrays (see below). JSON4MAT is doing that and more - following Matlab's loose management of datatypes it is also attempting to create numeric matrices from JSON arrays and only when that fails will it follow a the conservative route of generating an array of cells. For more information see <a href="http://json4mat.googlecode.com">http://json4mat.googlecode.com</a></p><pre class="codeinput">json=urlread([c.url,<span class="string">'/'</span>,c.db.name,<span class="string">'/'</span>,id])
+doc=json2mat(json)
+randM=doc.randM
+</pre><pre class="codeoutput">
+json =
+
+{"_id":"c25d4cac6c7f04f10ffb295bef00584c","_rev":"1-bfbc233e2221e1f9e1585340ca748831","hello":"world","randM":[[0.34998,0.35166,0.28584,0.075854,0.12991],[0.1966,0.83083,0.7572,0.05395,0.56882],[0.25108,0.58526,0.75373,0.5308,0.46939],[0.61604,0.54972,0.38045,0.77917,0.011902],[0.47329,0.91719,0.56782,0.93401,0.33712]]}
+
+
+
+doc = 
+
+       id: 'c25d4cac6c7f04f10ffb295bef00584c'
+      rev: '1-bfbc233e2221e1f9e1585340ca748831'
+    hello: 'world'
+    randM: [5x5 double]
+
+
+randM =
+
+    0.3500    0.3517    0.2858    0.0759    0.1299
+    0.1966    0.8308    0.7572    0.0539    0.5688
+    0.2511    0.5853    0.7537    0.5308    0.4694
+    0.6160    0.5497    0.3805    0.7792    0.0119
+    0.4733    0.9172    0.5678    0.9340    0.3371
+
+</pre><h2>Delete one document<a name="10"></a></h2><p>CouchDB will want to make sure you want to delete and entry by asking for both the document id and revision id. CouchDB will retrieve the rev id for you so if you don't want to make sure you are deleting a version you know then couch4mat makes it dangerously easy by letting you do it by asking only for the document id. As for 'get doc' if there is only one output argument then the deleted document will be returned so you can use doc=couch(c,'delete doc',id). If you use two output arguments note that c.db.all_docs will be updated.</p><pre class="codeinput">[c,doc]=couch(c,<span class="string">'delete doc'</span>,id);
+c.db.all_docs
+</pre><pre class="codeoutput">
+ans = 
+
+    total_rows: 2
+        offset: 0
+          rows: [2x1 struct]
+
+</pre><h2>Delete database<a name="11"></a></h2><p>After the previous examples this one will be self-explanatory. Remember that the database name is the one specified at c.db.name. The reason not to allow database deleting with the same immediate syntax as deleting a document (with the database as teh third input argument) is to make it a little harder to do in order to prevent unwanted deletion of a lot of data.</p><pre class="codeinput">c=couch(c,<span class="string">'delete db'</span>)
+</pre><pre class="codeoutput">
+c = 
+
+        url: 'http://127.0.0.1:5984'
+        opt: 'delete db'
+    welcome: [1x1 struct]
+         db: [1x1 struct]
+       cURL: [1x1 struct]
+    all_dbs: {'lixo'  'mydb'  'testing_again'  'test_suite_db/with_slashes'  'test_suite_db'  'test_suite_reports'}
+
+</pre><h2>Authentication<a name="12"></a></h2><p>All previous examples assume an open couch deployment which is not likely to be the case when you are hosting data or applications for others. The syntax for providing autentication information is as follows:</p><p>c=couch('url','auth','{username:usernamehere,password:passwordhere}')</p><p>The use of "auth" is similar to that of "welcome" and returns the same statistics. This command was also tested with hosted couch deployment at cloudant.com which is configured to support use of SSL. For example:</p><p>c=couch('https://youraccount.cloudant.com','auth','{username:usernamehere ,password:passwordhere}');</p><p>Note the third input argument can either be a structure or a JSON string. The latter was used in the example above which is converted automatically into a structure. You may have noted the JSON syntax employed here is not entirely legal ("" are missing bouding the username and password strings). This loose typing is supported alongside regular JSON typing by json2mat as described in the JSON4MAT manual at <a href="http://json4mat.googlecode.com/hg/html/json4mat_pub.html#6">http://json4mat.googlecode.com/hg/html/json4mat_pub.html#6</a> .</p><p class="footer"><br>
+      Published with MATLAB&reg; 7.10<br></p></div><!--
+##### SOURCE BEGIN #####
+%% COUCH4MAT: CouchDB Matlab tbox
+%
+% Jonas Almeida, April 2010
+%
+% This manual was generated automatically by running pub.m .
+%
+% The couch tbox revolves around a data structure and a single command.
+% The data structure can be created by just pointing the command to a a URL
+% where CouchDB is installed. If no URL is provided then the command
+% assumes you are targetting a local deployment, and will use
+% localhost:5984.
+%
+% All CouchDB functionalities are coded under the couch command with one
+% exception - the JSON parsers. These two parsers, json2mat and mat2json,
+% collectively designated as json4mat (http://json4mat.googlecode.com).
+%
+%% Installation
+%
+% You can download couch for the different OSs from
+% http://couchdb.apache.org/   or   from http://www.couch.io/downloads.
+%
+% In addition to Matlab this tutorial also assumes you have CURL installed.
+% 
+% If you are running on Windows you can get it from http://curl.haxx.se/,
+% if you are running this on a Mac or Linux you probably already have it.
+%
+%% couch()
+% Lets start by calling the local deployment, you can also target and
+% arbitrary deployment by using the URL as the input argument, i.e.
+% couch('url goes here')
+c=couch
+% this structure, c, will now be used as teh input argument of coucDB() to
+% which we will add more arguments.
+%
+%% Create database
+% The name of the database you want to create can be passed directly in the
+% c structure at c.db.name or can be sent as a third input argument, which
+% we'll do here:
+c=couch(c,'create db','mydb')
+%% List all databases
+% As with other usages of couch we'll use arguments that are as close as
+% possible to CouchDB's own syntax. For example, to get a list of all
+% databases one would call [c.url,'/_all_dbs'] so the second argument, and
+% field in the updated c structure, is 'all_dbs':
+c=couch(c,'all_dbs')
+%% Insert a document
+% the document can be provided already as a JSON string
+[c,doc]=couch(c,'insert doc','{"hello":"world"}');
+% or as a structured variable, which can include additional fields
+lala.hello='world';lala.randM=rand(5);[c,doc]=couch(c,'insert doc',lala)
+% note that the response in c.cURL has all the details of the exchange,
+c.cURL
+% including the _id and _rev of the document
+c.cURL.json
+% which is evertheless returned as a seccond output argument, doc. If only
+% one output argument is specified that will be doc
+doc=couch(c,'insert doc',lala);
+% see "Doc output argument" section for more on this
+%% List all docs
+% as with 'all_dbs' but now for documents of a database
+c=couch(c,'all_docs');c.db.all_docs
+%and each row will contain the key/value returned by that minimalist view
+c.db.all_docs.rows(:)
+%% Get one doc
+% lets get the last document inserted using its _id
+id = c.db.all_docs.rows(end).id
+% and now restrive the entry
+[c,doc]=couch(c,'get doc',id)
+% doc comes out as the second output argument of couch(). If you only
+% provide one output argument coucj will assume it is doc such that you can
+% convinently do doc=couch(c,'get doc',id).
+%% Doc output argument
+% In the previous example two output arguments were used, the c structure
+% and usual and the target answer to the URL call, the document. So now is
+% a good time to look at the use of output arguments. Because c is use as
+% couch db document model it is expected as as input and output argument of
+% couch(). However, it may be convenient in functions such as the
+% previous one to simply return the document that was requested. To
+% acomodate that in fucntions such as these the number of output arguments
+% is used to decide what is returned. If there is only one output argument
+% doc is returned. This pattern will be used for all doc centric commands,
+% such as 'delete doc' further ahead in this tutorial.
+doc=couch(c,'get doc',id)
+%% JSON4MAT
+% This is also a good time to recognize what the JSON4MAT parsers are doing
+% to accomodate Matlab data own formats. Notice that doc.randM is a 2D
+% matrix but JSON has no convention to represent dimensionality even if it
+% is reasonable to imagine it as an array of arrays (see below). JSON4MAT
+% is doing that and more - following Matlab's loose management of datatypes
+% it is also attempting to create numeric matrices from JSON arrays and
+% only when that fails will it follow a the conservative route of
+% generating an array of cells. For more information see
+% http://json4mat.googlecode.com
+json=urlread([c.url,'/',c.db.name,'/',id])
+doc=json2mat(json)
+randM=doc.randM
+%% Delete one document
+% CouchDB will want to make sure you want to delete and entry by asking for
+% both the document id and revision id. CouchDB will retrieve the rev id
+% for you so if you don't want to make sure you are deleting a version you
+% know then couch4mat makes it dangerously easy by letting you do it by 
+% asking only for the document id. As for 'get doc' if there is only one 
+% output argument then the deleted document will be returned so you can use
+% doc=couch(c,'delete doc',id). If you use two output arguments note that 
+% c.db.all_docs will be updated.
+[c,doc]=couch(c,'delete doc',id);
+c.db.all_docs
+%% Delete database
+% After the previous examples this one will be self-explanatory. Remember
+% that the database name is the one specified at c.db.name. The reason not
+% to allow database deleting with the same immediate syntax as deleting a
+% document (with the database as teh third input argument) is to make it a
+% little harder to do in order to prevent unwanted deletion of a lot of
+% data.
+c=couch(c,'delete db')
+%% Authentication
+% All previous examples assume an open couch deployment which is not likely
+% to be the case when you are hosting data or applications for others. The 
+% syntax for providing autentication information is as follows:
+%
+% c=couch('url','auth','{username:usernamehere,password:passwordhere}')
+%
+% The use of "auth" is similar to that of "welcome" and returns the same
+% statistics. This command was also tested with hosted couch deployment at
+% cloudant.com which is configured to support use of SSL. For example:
+%
+% c=couch('https://youraccount.cloudant.com','auth','{username:usernamehere
+% ,password:passwordhere}');
+%
+% Note the third input argument can either be a structure or a JSON string.
+% The latter was used in the example above which is converted automatically
+% into a structure. You may have noted the JSON syntax employed here is not
+% entirely legal ("" are missing bouding the username and password
+% strings). This loose typing is supported alongside regular JSON typing by
+% json2mat as described in the JSON4MAT manual at 
+% http://json4mat.googlecode.com/hg/html/json4mat_pub.html#6 .
+
+
+
+##### SOURCE END #####
+--></body></html>

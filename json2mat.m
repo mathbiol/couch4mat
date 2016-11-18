@@ -1,13 +1,16 @@
-function M=json2mat(J)
+function M=json2mat(J,tag)
 
 %JSON2MAT converts a javscript data object (JSON) into a Matlab structure
 %         using s recursive approach. J can also be a file name.
 %
-%Example: lala=json2mat('{lele:2,lili:4,lolo:[1,2,{lulu:5,bubu:[[1,2],[3,4],[5,6]]}]}') 
+%Example: lala=json2mat('{lele:2,lili:4,lolo:[1,2,{lulu:5,bubu:[[1,2],[3,4],[5,6]]}]}')
 %         notice lala.lolo{3}.bubu is read as a 2D matrix.
 %
 % Jonas Almeida, March 2010
 
+if exist('tag')~=1
+    tag={};
+end
 if exist(J)==2 % if J is a filename
     fid=fopen(J,'r');
     J='';
@@ -15,18 +18,32 @@ if exist(J)==2 % if J is a filename
         J=[J,fgetl(fid)];
     end
     fclose(fid);
-    M=json2mat(J);  
+    M=json2mat(J);
 else
     J1=regexprep(J(1:min([5,length(J)])),'\s',''); %despaced start of J string
-    if J1(1)=='{' %extract structures
+    if isempty(J1)
+        M='';
+    elseif J1(1)=='{' %extract structures
         JJ=regexp(J,'\{(.*)\}','tokens');
-        M=extract_struct(JJ{1}{1});
+        if ~isempty(JJ)
+            M=extract_struct(JJ{1}{1},tag);
+        else
+            M={};
+        end
     elseif J1(1)=='[' %extract cells
         JJ=regexp(J,'\[(.*)\]','tokens');
-        M=extract_cell(JJ{1}{1});
+        if ~isempty(JJ)
+            M=extract_cell(JJ{1}{1});
+        else
+            M=[];
+        end
     elseif J1(1)=='"' %literal string
         JJ=regexp(J,'\"(.*)\"','tokens');
-        M=JJ{1}{1};
+        if ~isempty(JJ)
+            M=JJ{1}{1};
+        else
+            M='';
+        end
     else %numeric value
         j=regexp(J,'[\d\.\E\e]');
         if length(j)==length(J) %it is a number
@@ -37,15 +54,25 @@ else
     end
 end
 
-function y=extract_struct(x)
+function y=extract_struct(x,tag)
 %detag arrays first
 indOC=extract_embed(x,'[',']');
 n=size(indOC,1);
 for i=n:-1:1
     tag{i}=json2mat(x(indOC(i,1):indOC(i,2)));
-    x=[x(1:indOC(i,1)-1),'tag{',num2str(i),'}',x(indOC(i,2)+1:end)];
+    x=[x(1:indOC(i,1)-1),'tag~<',num2str(i),'>~',x(indOC(i,2)+1:end)];
+end
+%detag nested structures next
+indOC=extract_embed(x,'{','}');
+m=size(indOC,1);
+for i=n+m:-1:n+1
+    j=i-n;
+    tag{i}=json2mat(x(indOC(j,1):indOC(j,2)),tag);
+    x=[x(1:indOC(j,1)-1),'tag{',num2str(i),'}',x(indOC(j,2)+1:end)];
 end
 
+x=strrep(x,'~<','{');
+x=strrep(x,'>~','}');
 
 a=regexp(x,'[^:,]+:[^,]+');
 n=length(a);
@@ -58,7 +85,8 @@ for i=1:n
     t{1}{1}=strrep(t{1}{1},'"','');
     if t{1}{1}(1)=='_' %JSON allows for fieldnames starting with "_"
         t{1}{1}(1)=''; % this line will cause hard to track problems if the same object has 2 attributes with the same name but one of them starting with "_"
-    end        
+    end
+    t{1}{1}=regexprep(t{1}{1},'\W','_'); %for example to deal with couch attachements
     if regexp(t{1}{2},'tag{\d+}')
         y.(t{1}{1})=eval(t{1}{2});
     else
@@ -93,7 +121,7 @@ if exist('tag') %catching numeric content
     end
 end
 
-if exist('y')~=1    
+if exist('y')~=1
     if sum(x=='"')==0
         y=eval(['{',x,'}']);
         try;y=cell2mat(y')';end
@@ -101,7 +129,6 @@ if exist('y')~=1
         y=eval(['{',strrep(x,'"',''''),'}']);
     end
 end
-
 
 %look for embeded objects and arrays
 
@@ -115,7 +142,7 @@ indOpen=[indOpen,ones(length(indOpen),1)];
 indClose=strfind(x,tagClose)';
 indClose=[indClose,-ones(length(indClose),1)];
 indOpenClose=[indOpen;indClose];
-[~,Ind]=sort(indOpenClose(:,1));
+[lala,Ind]=sort(indOpenClose(:,1));
 indOpenClose=indOpenClose(Ind,:);
 n=size(indOpenClose,1);
 for i=2:n % add one for open, take one for close

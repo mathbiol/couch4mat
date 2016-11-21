@@ -21,8 +21,8 @@
 %
 % In addition to Matlab this tutorial also assumes you have CURL installed.
 % 
-% If you are running on Windows you can get it from http://curl.haxx.se/,
-% if you are running this on a Mac or Linux you probably already have it.
+% If you are running on Windows you can get it from http://curl.haxx.se/.
+% If you are running this on a Mac or Linux you probably already have it.
 %
 %% couch()
 % Lets start by calling the local deployment, you can also target and
@@ -48,10 +48,10 @@ c=couch(c,'all_dbs')
 [c,doc]=couch(c,'insert doc','{"hello":"world"}');
 % or as a structured variable, which can include additional fields
 lala.hello='world';lala.randM=rand(5);[c,doc]=couch(c,'insert doc',lala)
-% note that the response in c.cURL has all the details of the exchange,
-c.cURL
+% note that the response in c.curl has all the details of the exchange,
+c.curl
 % including the _id and _rev of the document
-c.cURL.json
+c.curl.json
 % which is evertheless returned as a seccond output argument, doc. If only
 % one output argument is specified that will be doc
 doc=couch(c,'insert doc',lala);
@@ -65,10 +65,10 @@ c.db.all_docs.rows(:)
 % lets get the last document inserted using its _id
 id = c.db.all_docs.rows(end).id
 % and now restrive the entry
-[c,doc]=couch(c,'get doc',id)
+[c,doc]=couch(c,'doc',id)
 % doc comes out as the second output argument of couch(). If you only
 % provide one output argument coucj will assume it is doc such that you can
-% convinently do doc=couch(c,'get doc',id).
+% convinently do doc=couch(c,'doc',id).
 %% Doc output argument
 % In the previous example two output arguments were used, the c structure
 % and usual and the target answer to the URL call, the document. So now is
@@ -80,7 +80,7 @@ id = c.db.all_docs.rows(end).id
 % is used to decide what is returned. If there is only one output argument
 % doc is returned. This pattern will be used for all doc centric commands,
 % such as 'delete doc' further ahead in this tutorial.
-doc=couch(c,'get doc',id)
+doc=couch(c,'doc',id)
 %% JSON4MAT
 % This is also a good time to recognize what the JSON4MAT parsers are doing
 % to accomodate Matlab data own formats. Notice that doc.randM is a 2D
@@ -134,5 +134,39 @@ c=couch(c,'delete db')
 % strings). This loose typing is supported alongside regular JSON typing by
 % json2mat as described in the JSON4MAT manual at 
 % http://json4mat.googlecode.com/hg/html/json4mat_pub.html#6 .
-
-
+%% FreeMat
+% FreeMat is a free open source clone of Matlab which is mostly compatible
+% with regular m-code. "most" is not "all" so a few additional functions
+% were written to deal with teh differences, such as json2freemat and
+% cell2freemat (equivalent to json2mat and cell2mat in regular Matlab). The
+% good news is that couch() was written to detect which m-interpreter you
+% are using and use the right functions so you don't have to worry about
+% this: couch() will run equally well in Matlab and FreeMat :-).
+%% Create Admin user
+% Creating and admin user will finish the "admin party" and will create the
+% _users database. Note the output argument is not c, i.e. no
+% authentication information is included in c yet.
+c=couch; % start from scratch
+a=couch(c,'insert admin','{username:lala,password:lele}');
+% First add authenticaion information and then check one's own entry in
+% _users database.
+c.auth.username='lala';c.auth.password='lele';
+c=couch(c,'db','_users');
+c.db.info
+%% Session
+% The session will now contain information about the authenticated user:
+s=couch(c,'session')
+s.info
+%% Admins
+% for some reason I don't understand one can't get the admin user
+% information back from the _users database. Instead one has to go to the
+% _config/admins database
+c=couch(c,'db','_config/admins');
+c.db.info
+%% Delete Admin
+% Any admin can delete any admin. Since we have created only one admin, by
+% deleting it we are left without admins and the admin party in teh
+% localhost resumes. Note removing admin is a regular DELETE with no
+% worries about versioning.
+a=couch(c,'delete admin','lala')
+a.curl.call

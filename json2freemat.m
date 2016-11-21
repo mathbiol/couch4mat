@@ -1,16 +1,13 @@
-function M=json2mat(J,tag)
+function M=json2freemat(J,tag)
 
 %JSON2MAT converts a javscript data object (JSON) into a Matlab structure
 %         using s recursive approach. J can also be a file name.
 %
-%Example: lala=json2mat('{lele:2,lili:4,lolo:[1,2,{lulu:5,bubu:[[1,2],[3,4],[5,6]]}]}')
+%Example: lala=json2freemat('{lele:2,lili:4,lolo:[1,2,{lulu:5,bubu:[[1,2],[3,4],[5,6]]}]}')
 %         notice lala.lolo{3}.bubu is read as a 2D matrix.
 %
 % Jonas Almeida, March 2010
-
-if exist('tag')~=1
-    tag={};
-end
+if exist('tag')~=1;tag={};end
 if exist(J)==2 % if J is a filename
     fid=fopen(J,'r');
     J='';
@@ -18,7 +15,7 @@ if exist(J)==2 % if J is a filename
         J=[J,fgetl(fid)];
     end
     fclose(fid);
-    M=json2mat(J);
+    M=json2freemat(J);
 else
     J1=regexprep(J(1:min([5,length(J)])),'\s',''); %despaced start of J string
     if isempty(J1)
@@ -49,7 +46,7 @@ else
         if length(j)==length(J) %it is a number
             M=str2num(J); % is number
         else
-            M=json2mat(['"',J,'"']); % not a number after all
+            M=json2freemat(['"',J,'"']); % not a number after all
         end
     end
 end
@@ -59,7 +56,7 @@ function y=extract_struct(x,tag)
 indOC=extract_embed(x,'[',']');
 n=size(indOC,1);
 for i=n:-1:1
-    tag{i}=json2mat(x(indOC(i,1):indOC(i,2)));
+    tag{i}=json2freemat(x(indOC(i,1):indOC(i,2)),tag);
     x=[x(1:indOC(i,1)-1),'tag~<',num2str(i),'>~',x(indOC(i,2)+1:end)];
 end
 %detag nested structures next
@@ -67,7 +64,7 @@ indOC=extract_embed(x,'{','}');
 m=size(indOC,1);
 for i=n+m:-1:n+1
     j=i-n;
-    tag{i}=json2mat(x(indOC(j,1):indOC(j,2)),tag);
+    tag{i}=json2freemat(x(indOC(j,1):indOC(j,2)),tag);
     x=[x(1:indOC(j,1)-1),'tag{',num2str(i),'}',x(indOC(j,2)+1:end)];
 end
 
@@ -90,9 +87,9 @@ for i=1:n
     if regexp(t{1}{2},'tag{\d+}')
         y.(t{1}{1})=eval(t{1}{2});
     else
-        y.(t{1}{1})=json2mat(t{1}{2});
+        y.(t{1}{1})=json2freemat(t{1}{2});
     end
-    %y.(t{1}{1})=json2mat(t{1}{2});
+    %y.(t{1}{1})=json2freemat(t{1}{2});
 end
 
 function y=extract_cell(x)
@@ -100,15 +97,15 @@ function y=extract_cell(x)
 indOC=extract_embed(x,'{','}');
 n=size(indOC,1);
 for i=n:-1:1
-    tag{i}=json2mat(x(indOC(i,1):indOC(i,2)));
+    tag{i}=json2freemat(x(indOC(i,1):indOC(i,2)));
     x=[x(1:indOC(i,1)-1),'tag~<',num2str(i),'>~',x(indOC(i,2)+1:end)];
 end
 indOC=extract_embed(x,'[',']');
 m=size(indOC,1);
 for j=m:-1:1
     i=n+j;
-    tag{i}=json2mat(x(indOC(i,1):indOC(i,2)));
-    try;tag{i}=cell2mat(tag{i});end
+    tag{i}=json2freemat(x(indOC(i,1):indOC(i,2)));
+    try;tag{i}=cell2freemat(tag{i});end
     x=[x(1:indOC(i,1)-1),'tag{',num2str(i),'}',x(indOC(i,2)+1:end)];
 end
 x=strrep(x,'~<','{');
@@ -124,7 +121,7 @@ end
 if exist('y')~=1
     if sum(x=='"')==0
         y=eval(['{',x,'}']);
-        try;y=cell2mat(y')';end
+        try;y=cell2freemat(y')';end
     else
         y=eval(['{',strrep(x,'"',''''),'}']);
     end

@@ -2,6 +2,8 @@
 %
 % Jonas Almeida, April 2010
 %
+% Updated by Gustavo Delfino on Nov 2016
+%
 % This manual was generated automatically by running pub.m .
 %
 % The couch tbox revolves around a data structure and a single command.
@@ -12,15 +14,19 @@
 %
 % All CouchDB functionalities are coded under the couch command with one
 % exception - the JSON parsers. These two parsers, json2mat and mat2json,
-% collectively designated as json4mat (http://json4mat.googlecode.com).
+% collectively designated as json4mat.
 %
+% Old versions of couch4mat and json4mat may still be available at
+% http://couch4mat.googlecode.com and http://json4mat.googlecode.com
+% The versions on https://github.com/mathbiol/couch4mat are newer.
+%
+
 %% Installation
 %
-% You can download couch for the different OSs from
-% http://couchdb.apache.org/   or   from http://www.couch.io/downloads.
+% You can download CouchDB for the different OSs from
+% http://couchdb.apache.org/
 %
 % In addition to Matlab this tutorial also assumes you have CURL installed.
-% 
 % If you are running on Windows you can get it from http://curl.haxx.se/.
 % If you are running this on a Mac or Linux you probably already have it.
 %
@@ -29,7 +35,8 @@
 % arbitrary deployment by using the URL as the input argument, i.e.
 % couch('url goes here')
 c=couch
-% this structure, c, will now be used as teh input argument of coucDB() to
+%%
+% this structure, c, will now be used as the input argument of couch() to
 % which we will add more arguments.
 %
 %% Create database
@@ -46,37 +53,48 @@ c=couch(c,'all_dbs')
 %% Insert a document
 % the document can be provided already as a JSON string
 [c,doc]=couch(c,'insert doc','{"hello":"world"}');
+%%
 % or as a structured variable, which can include additional fields
-lala.hello='world';lala.randM=rand(5);[c,doc]=couch(c,'insert doc',lala)
+lala.hello='world';
+lala.randM=randi([0 99],5,5)
+[c,doc]=couch(c,'insert doc',lala)
+%%
 % note that the response in c.curl has all the details of the exchange,
 c.curl
+%%
 % including the _id and _rev of the document
 c.curl.json
-% which is evertheless returned as a seccond output argument, doc. If only
+%%
+% which is evertheless returned as a second output argument, doc. If only
 % one output argument is specified that will be doc
 doc=couch(c,'insert doc',lala);
+%%
 % see "Doc output argument" section for more on this
 %% List all docs
 % as with 'all_dbs' but now for documents of a database
-c=couch(c,'all_docs');c.db.all_docs
-%and each row will contain the key/value returned by that minimalist view
+c=couch(c,'all_docs');
+c.db.all_docs
+%%
+% and each row will contain the key/value returned by that minimalist view
 c.db.all_docs.rows(:)
 %% Get one doc
-% lets get the last document inserted using its _id
+% Lets get the last document inserted using its _id
 id = c.db.all_docs.rows(end).id
-% and now restrive the entry
+%%
+% and now retrieve the entry
 [c,doc]=couch(c,'doc',id)
+%%
 % doc comes out as the second output argument of couch(). If you only
-% provide one output argument coucj will assume it is doc such that you can
-% convinently do doc=couch(c,'doc',id).
+% provide one output argument couch will assume it is doc such that you can
+% conveniently do doc=couch(c,'doc',id).
 %% Doc output argument
 % In the previous example two output arguments were used, the c structure
 % and usual and the target answer to the URL call, the document. So now is
-% a good time to look at the use of output arguments. Because c is use as
-% couch db document model it is expected as as input and output argument of
+% a good time to look at the use of output arguments. Because c is used as
+% couch db document model it is expected as input and output argument of
 % couch(). However, it may be convenient in functions such as the
 % previous one to simply return the document that was requested. To
-% acomodate that in fucntions such as these the number of output arguments
+% acomodate that in functions such as these the number of output arguments
 % is used to decide what is returned. If there is only one output argument
 % doc is returned. This pattern will be used for all doc centric commands,
 % such as 'delete doc' further ahead in this tutorial.
@@ -109,7 +127,7 @@ c.db.all_docs
 % After the previous examples this one will be self-explanatory. Remember
 % that the database name is the one specified at c.db.name. The reason not
 % to allow database deleting with the same immediate syntax as deleting a
-% document (with the database as teh third input argument) is to make it a
+% document (with the database as the third input argument) is to make it a
 % little harder to do in order to prevent unwanted deletion of a lot of
 % data.
 c=couch(c,'delete db')
@@ -118,14 +136,15 @@ c=couch(c,'delete db')
 % to be the case when you are hosting data or applications for others. The 
 % syntax for providing autentication information is as follows:
 %
-% c=couch('url','auth','{username:usernamehere,password:passwordhere}')
+%  c=couch('url','auth', ...
+%          '{username:usernamehere,password:passwordhere}')
 %
 % The use of "auth" is similar to that of "welcome" and returns the same
 % statistics. This command was also tested with hosted couch deployment at
 % cloudant.com which is configured to support use of SSL. For example:
 %
-% c=couch('https://youraccount.cloudant.com','auth','{username:usernamehere
-% ,password:passwordhere}');
+%  c=couch('https://youraccount.cloudant.com','auth', ...
+%          '{username:usernamehere, password:passwordhere}');
 %
 % Note the third input argument can either be a structure or a JSON string.
 % The latter was used in the example above which is converted automatically
@@ -137,7 +156,7 @@ c=couch(c,'delete db')
 %% FreeMat
 % FreeMat is a free open source clone of Matlab which is mostly compatible
 % with regular m-code. "most" is not "all" so a few additional functions
-% were written to deal with teh differences, such as json2freemat and
+% were written to deal with the differences, such as json2freemat and
 % cell2freemat (equivalent to json2mat and cell2mat in regular Matlab). The
 % good news is that couch() was written to detect which m-interpreter you
 % are using and use the right functions so you don't have to worry about
@@ -148,9 +167,11 @@ c=couch(c,'delete db')
 % authentication information is included in c yet.
 c=couch; % start from scratch
 a=couch(c,'insert admin','{username:lala,password:lele}');
+%%
 % First add authenticaion information and then check one's own entry in
 % _users database.
-c.auth.username='lala';c.auth.password='lele';
+c.auth.username='lala';
+c.auth.password='lele';
 c=couch(c,'db','_users');
 c.db.info
 %% Session
@@ -165,7 +186,7 @@ c=couch(c,'db','_config/admins');
 c.db.info
 %% Delete Admin
 % Any admin can delete any admin. Since we have created only one admin, by
-% deleting it we are left without admins and the admin party in teh
+% deleting it we are left without admins and the admin party in the
 % localhost resumes. Note removing admin is a regular DELETE with no
 % worries about versioning.
 a=couch(c,'delete admin','lala')

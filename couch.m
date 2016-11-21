@@ -56,7 +56,7 @@ switch c.opt
         c=couch_curl(c,'GET',['/',c.db.name,'/_all_docs'],1);
         c.db.all_docs=c.curl.json;
     case 'insert doc' % insert doc, sent it through more
-        c=couch_curl(c,'POST',['/',c.db.name,' -d @curl_in.json'],more);
+        c=couch_curl(c,'POST',['/',c.db.name,' -H "Content-Type: application/json" -d @curl_in.json'],more);
         d=c.curl.json;
         c.doc=d;
         if nargout==1;c=d;end % being used as a DOC function
